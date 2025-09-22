@@ -1,0 +1,349 @@
+syntax = "proto3";
+
+package neurosim.plugin.v1;
+
+option go_package = "github.com/neurosimio/simulator-plugin-interface/proto/v1";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/empty.proto";
+
+// Standard Plugin Service Interface that ALL plugins must implement
+// This provides binary isolation while ensuring interoperability
+service PluginService {
+  // Health and lifecycle management
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+  rpc GetManifest(GetManifestRequest) returns (GetManifestResponse);
+
+  // Instance management (for instantiable plugins)
+  rpc CreateInstance(CreateInstanceRequest) returns (CreateInstanceResponse);
+  rpc StartInstance(StartInstanceRequest) returns (StartInstanceResponse);
+  rpc StopInstance(StopInstanceRequest) returns (StopInstanceResponse);
+  rpc DestroyInstance(DestroyInstanceRequest) returns (DestroyInstanceResponse);
+  rpc GetInstanceStatus(GetInstanceStatusRequest) returns (GetInstanceStatusResponse);
+  rpc ListInstances(ListInstancesRequest) returns (ListInstancesResponse);
+
+  // Message processing (for component plugins)
+  rpc ProcessMessage(ProcessMessageRequest) returns (ProcessMessageResponse);
+  rpc ProcessMessageStream(stream ProcessMessageRequest) returns (stream ProcessMessageResponse);
+
+  // Message encoding/decoding (for message ICD plugins)
+  rpc EncodeMessage(EncodeMessageRequest) returns (EncodeMessageResponse);
+  rpc DecodeMessage(DecodeMessageRequest) returns (DecodeMessageResponse);
+
+  // Transport operations (for transport plugins)
+  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
+  rpc ReceiveMessage(ReceiveMessageRequest) returns (stream ReceiveMessageResponse);
+}
+
+// Plugin manifest describes the plugin's capabilities
+message PluginManifest {
+  // Basic plugin information
+  string id = 1;                    // Unique plugin identifier
+  string name = 2;                  // Human-readable name
+  string version = 3;               // Plugin version (semver)
+  PluginType plugin_type = 4;       // Type of plugin
+  bool instantiable = 5;            // Can create multiple instances
+  string description = 6;           // Plugin description
+
+  // Communication endpoints
+  string grpc_endpoint = 7;         // gRPC service endpoint
+  string http_endpoint = 8;         // Optional HTTP endpoint
+
+  // Component plugin specific fields
+  repeated ComponentSchema component_schemas = 10;
+  SupportedMessages supported_messages = 11;
+  repeated string required_libraries = 12;
+
+  // Message ICD plugin specific fields
+  MessageLibrary message_library = 15;
+  repeated string supported_formats = 16;
+
+  // Transport plugin specific fields
+  repeated TransportType transport_types = 20;
+
+  // Configuration and metadata
+  google.protobuf.Struct config = 30;
+  google.protobuf.Struct metadata = 31;
+}
+
+// Plugin types supported by the simulation platform
+enum PluginType {
+  PLUGIN_TYPE_UNSPECIFIED = 0;
+  PLUGIN_TYPE_COMPONENT = 1;      // Real-world system components
+  PLUGIN_TYPE_MESSAGE_ICD = 2;    // Message interface libraries
+  PLUGIN_TYPE_TRANSPORT = 3;      // Custom transport implementations
+}
+
+// Component schema for simulation editor
+message ComponentSchema {
+  string id = 1;                            // Component type ID
+  string name = 2;                          // Display name
+  string description = 3;                   // Component description
+  string icon_type = 4;                     // UI icon type
+  bool singleton = 5;                       // Only one instance allowed
+  repeated TransportOption transport_options = 6;
+  repeated ConfigField config_fields = 7;
+}
+
+// Transport configuration options
+message TransportOption {
+  string id = 1;                      // Transport ID (kafka, amqp, etc.)
+  string name = 2;                    // Internal name
+  string display_name = 3;            // UI display name
+  repeated TransportField fields = 4; // Configuration fields
+}
+
+// Transport configuration field
+message TransportField {
+  string id = 1;                      // Field ID
+  string name = 2;                    // Display name
+  FieldType type = 3;                 // Field data type
+  bool required = 4;                  // Required field
+  string placeholder = 5;             // UI placeholder text
+  string description = 6;             // Field description
+  google.protobuf.Struct default_value = 7; // Default value
+  repeated FieldOption options = 8;   // For select fields
+}
+
+// Component configuration field (extends transport field)
+message ConfigField {
+  string id = 1;
+  string name = 2;
+  FieldType type = 3;
+  bool required = 4;
+  string placeholder = 5;
+  string description = 6;
+  google.protobuf.Struct default_value = 7;
+  repeated FieldOption options = 8;
+}
+
+// Field types for configuration
+enum FieldType {
+  FIELD_TYPE_UNSPECIFIED = 0;
+  FIELD_TYPE_TEXT = 1;
+  FIELD_TYPE_TEXTAREA = 2;
+  FIELD_TYPE_NUMBER = 3;
+  FIELD_TYPE_BOOLEAN = 4;
+  FIELD_TYPE_SELECT = 5;
+  FIELD_TYPE_PASSWORD = 6;
+}
+
+// Options for select fields
+message FieldOption {
+  string value = 1;
+  string label = 2;
+}
+
+// Message support definitions
+message SupportedMessages {
+  repeated MessageSupport produces = 1;
+  repeated MessageSupport consumes = 2;
+}
+
+message MessageSupport {
+  string message_type = 1;
+  string message_library = 2;
+  string description = 3;
+}
+
+// Message library for ICD plugins
+message MessageLibrary {
+  string id = 1;
+  string name = 2;
+  string version = 3;
+  string description = 4;
+  repeated MessageType message_types = 5;
+}
+
+message MessageType {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  google.protobuf.Struct schema = 4;
+  string example_payload = 5;
+}
+
+// Transport type for transport plugins
+message TransportType {
+  string id = 1;
+  string name = 2;
+  string display_name = 3;
+  repeated TransportField fields = 4;
+}
+
+// Standard simulation message format
+message SimMessage {
+  string message_id = 1;
+  string source_component = 2;
+  string target_component = 3;
+  string message_type = 4;
+  bytes payload = 5;
+  string content_type = 6;
+  string encoding = 7;
+  int64 timestamp = 8;
+  map<string, string> headers = 9;
+  string correlation_id = 10;
+  string simulation_id = 11;
+}
+
+// Health check messages
+message HealthCheckRequest {
+  string service = 1;
+}
+
+message HealthCheckResponse {
+  enum ServingStatus {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+    SERVICE_UNKNOWN = 3;
+  }
+  ServingStatus status = 1;
+  string message = 2;
+  google.protobuf.Timestamp timestamp = 3;
+}
+
+// Manifest request/response
+message GetManifestRequest {}
+
+message GetManifestResponse {
+  PluginManifest manifest = 1;
+}
+
+// Instance management messages
+message CreateInstanceRequest {
+  string instance_id = 1;
+  string simulation_id = 2;
+  google.protobuf.Struct config = 3;
+}
+
+message CreateInstanceResponse {
+  bool success = 1;
+  string message = 2;
+  string instance_id = 3;
+}
+
+message StartInstanceRequest {
+  string instance_id = 1;
+}
+
+message StartInstanceResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message StopInstanceRequest {
+  string instance_id = 1;
+}
+
+message StopInstanceResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message DestroyInstanceRequest {
+  string instance_id = 1;
+}
+
+message DestroyInstanceResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetInstanceStatusRequest {
+  string instance_id = 1;
+}
+
+message GetInstanceStatusResponse {
+  enum InstanceStatus {
+    INACTIVE = 0;
+    STARTING = 1;
+    RUNNING = 2;
+    STOPPING = 3;
+    STOPPED = 4;
+    ERROR = 5;
+  }
+  InstanceStatus status = 1;
+  string message = 2;
+  google.protobuf.Timestamp started_at = 3;
+  google.protobuf.Timestamp last_activity = 4;
+}
+
+message ListInstancesRequest {
+  string simulation_id = 1;
+}
+
+message ListInstancesResponse {
+  repeated InstanceInfo instances = 1;
+}
+
+message InstanceInfo {
+  string instance_id = 1;
+  string simulation_id = 2;
+  GetInstanceStatusResponse.InstanceStatus status = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp started_at = 5;
+  google.protobuf.Struct config = 6;
+}
+
+// Message processing
+message ProcessMessageRequest {
+  string instance_id = 1;
+  SimMessage message = 2;
+}
+
+message ProcessMessageResponse {
+  bool success = 1;
+  string message = 2;
+  repeated SimMessage output_messages = 3;
+}
+
+// Message encoding/decoding
+message EncodeMessageRequest {
+  string message_type = 1;
+  google.protobuf.Struct payload = 2;
+  string format = 3;
+}
+
+message EncodeMessageResponse {
+  bool success = 1;
+  string message = 2;
+  bytes encoded_payload = 3;
+  string content_type = 4;
+}
+
+message DecodeMessageRequest {
+  string message_type = 1;
+  bytes encoded_payload = 2;
+  string content_type = 3;
+}
+
+message DecodeMessageResponse {
+  bool success = 1;
+  string message = 2;
+  google.protobuf.Struct decoded_payload = 3;
+}
+
+// Transport operations
+message SendMessageRequest {
+  string transport_id = 1;
+  SimMessage message = 2;
+  google.protobuf.Struct transport_config = 3;
+}
+
+message SendMessageResponse {
+  bool success = 1;
+  string message = 2;
+  string transport_message_id = 3;
+}
+
+message ReceiveMessageRequest {
+  string transport_id = 1;
+  google.protobuf.Struct transport_config = 2;
+}
+
+message ReceiveMessageResponse {
+  SimMessage message = 1;
+  string transport_message_id = 2;
+}

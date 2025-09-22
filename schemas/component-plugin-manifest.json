@@ -1,0 +1,292 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://neurosim.io/schemas/component-plugin-manifest.json",
+  "title": "Component Plugin Manifest",
+  "description": "Schema for component plugin manifest used in NeuroSim simulation platform",
+  "type": "object",
+  "required": ["id", "name", "version", "pluginType", "componentSchemas"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9-_]+$",
+      "description": "Unique plugin identifier (alphanumeric, hyphens, underscores only)"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable plugin name"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Plugin version in semantic versioning format (x.y.z)"
+    },
+    "pluginType": {
+      "type": "string",
+      "enum": ["component"],
+      "description": "Must be 'component' for component plugins"
+    },
+    "instantiable": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this plugin can create multiple instances"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of the plugin's purpose and functionality"
+    },
+    "grpcEndpoint": {
+      "type": "string",
+      "description": "gRPC service endpoint (host:port format)"
+    },
+    "httpEndpoint": {
+      "type": "string",
+      "format": "uri",
+      "description": "Optional HTTP endpoint for REST API"
+    },
+    "componentSchemas": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Array of component schemas this plugin provides",
+      "items": {
+        "$ref": "#/definitions/ComponentSchema"
+      }
+    },
+    "supportedMessages": {
+      "$ref": "#/definitions/SupportedMessages",
+      "description": "Messages this component can produce and consume"
+    },
+    "requiredLibraries": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of required message libraries"
+    },
+    "config": {
+      "type": "object",
+      "description": "Plugin-specific configuration"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional plugin metadata"
+    }
+  },
+  "definitions": {
+    "ComponentSchema": {
+      "type": "object",
+      "required": ["id", "name", "description"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9-_]+$",
+          "description": "Unique component identifier"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Component display name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Component description"
+        },
+        "iconType": {
+          "type": "string",
+          "enum": ["train", "database", "settings", "network", "monitor", "server"],
+          "description": "Icon type for UI display"
+        },
+        "singleton": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether only one instance is allowed in a simulation"
+        },
+        "transportOptions": {
+          "type": "array",
+          "description": "Available transport configuration options",
+          "items": {
+            "$ref": "#/definitions/TransportOption"
+          }
+        },
+        "configFields": {
+          "type": "array",
+          "description": "Component-specific configuration fields",
+          "items": {
+            "$ref": "#/definitions/ConfigField"
+          }
+        }
+      }
+    },
+    "TransportOption": {
+      "type": "object",
+      "required": ["id", "name", "displayName", "fields"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9-_]+$",
+          "description": "Transport identifier (kafka, amqp, redis, etc.)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Internal transport name"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Human-readable transport name"
+        },
+        "fields": {
+          "type": "array",
+          "description": "Transport configuration fields",
+          "items": {
+            "$ref": "#/definitions/TransportField"
+          }
+        }
+      }
+    },
+    "TransportField": {
+      "type": "object",
+      "required": ["id", "name", "type"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9-_]+$",
+          "description": "Field identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Field display name"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["text", "textarea", "number", "boolean", "select", "password"],
+          "description": "Field input type"
+        },
+        "required": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this field is required"
+        },
+        "placeholder": {
+          "type": "string",
+          "description": "Placeholder text for the field"
+        },
+        "description": {
+          "type": "string",
+          "description": "Field description"
+        },
+        "defaultValue": {
+          "description": "Default value for the field"
+        },
+        "options": {
+          "type": "array",
+          "description": "Options for select fields",
+          "items": {
+            "type": "object",
+            "required": ["value", "label"],
+            "properties": {
+              "value": {
+                "type": "string",
+                "description": "Option value"
+              },
+              "label": {
+                "type": "string",
+                "description": "Option display label"
+              }
+            }
+          }
+        }
+      }
+    },
+    "ConfigField": {
+      "type": "object",
+      "required": ["id", "name", "type"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9-_]+$",
+          "description": "Field identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Field display name"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["text", "textarea", "number", "boolean", "select", "password"],
+          "description": "Field input type"
+        },
+        "required": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this field is required"
+        },
+        "placeholder": {
+          "type": "string",
+          "description": "Placeholder text for the field"
+        },
+        "description": {
+          "type": "string",
+          "description": "Field description"
+        },
+        "defaultValue": {
+          "description": "Default value for the field"
+        },
+        "options": {
+          "type": "array",
+          "description": "Options for select fields",
+          "items": {
+            "type": "object",
+            "required": ["value", "label"],
+            "properties": {
+              "value": {
+                "type": "string",
+                "description": "Option value"
+              },
+              "label": {
+                "type": "string",
+                "description": "Option display label"
+              }
+            }
+          }
+        }
+      }
+    },
+    "SupportedMessages": {
+      "type": "object",
+      "properties": {
+        "produces": {
+          "type": "array",
+          "description": "Messages this component can produce",
+          "items": {
+            "$ref": "#/definitions/MessageSupport"
+          }
+        },
+        "consumes": {
+          "type": "array",
+          "description": "Messages this component can consume",
+          "items": {
+            "$ref": "#/definitions/MessageSupport"
+          }
+        }
+      }
+    },
+    "MessageSupport": {
+      "type": "object",
+      "required": ["messageType", "messageLibrary"],
+      "properties": {
+        "messageType": {
+          "type": "string",
+          "description": "Type of message (e.g., tmtsh-add, tmtsh-update)"
+        },
+        "messageLibrary": {
+          "type": "string",
+          "description": "Message library identifier"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of how this message is used"
+        }
+      }
+    }
+  }
+}

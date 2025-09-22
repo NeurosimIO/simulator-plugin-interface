@@ -1,0 +1,131 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://neurosim.io/schemas/message-icd-plugin-manifest.json",
+  "title": "Message ICD Plugin Manifest",
+  "description": "Schema for message ICD plugin manifest used in NeuroSim simulation platform",
+  "type": "object",
+  "required": ["id", "name", "version", "pluginType", "messageLibrary"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9-_]+$",
+      "description": "Unique plugin identifier (alphanumeric, hyphens, underscores only)"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable plugin name"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Plugin version in semantic versioning format (x.y.z)"
+    },
+    "pluginType": {
+      "type": "string",
+      "enum": ["message-icd"],
+      "description": "Must be 'message-icd' for message ICD plugins"
+    },
+    "instantiable": {
+      "type": "boolean",
+      "default": false,
+      "description": "Message ICD plugins are typically not instantiable"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of the message library and its purpose"
+    },
+    "grpcEndpoint": {
+      "type": "string",
+      "description": "gRPC service endpoint (host:port format)"
+    },
+    "httpEndpoint": {
+      "type": "string",
+      "format": "uri",
+      "description": "Optional HTTP endpoint for REST API"
+    },
+    "messageLibrary": {
+      "$ref": "#/definitions/MessageLibrary",
+      "description": "Message library provided by this plugin"
+    },
+    "supportedFormats": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["json", "binary", "xml", "protobuf", "yaml"]
+      },
+      "description": "Formats supported for message encoding/decoding"
+    },
+    "config": {
+      "type": "object",
+      "description": "Plugin-specific configuration"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional plugin metadata"
+    }
+  },
+  "definitions": {
+    "MessageLibrary": {
+      "type": "object",
+      "required": ["id", "name", "version", "messageTypes"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9-_]+$",
+          "description": "Unique message library identifier"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable library name"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "Library version in semantic versioning format"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the message library"
+        },
+        "messageTypes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/MessageType"
+          },
+          "description": "Array of message types in this library"
+        }
+      }
+    },
+    "MessageType": {
+      "type": "object",
+      "required": ["id", "name", "description"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9-_]+$",
+          "description": "Unique message type identifier"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable message type name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the message type"
+        },
+        "schema": {
+          "type": "object",
+          "description": "JSON schema definition for this message type"
+        },
+        "examplePayload": {
+          "type": "string",
+          "description": "Example payload for this message type (typically JSON string)"
+        }
+      }
+    }
+  }
+}

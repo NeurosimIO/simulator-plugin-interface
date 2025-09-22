@@ -1,0 +1,151 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://neurosim.io/schemas/transport-plugin-manifest.json",
+  "title": "Transport Plugin Manifest",
+  "description": "Schema for transport plugin manifest used in NeuroSim simulation platform",
+  "type": "object",
+  "required": ["id", "name", "version", "pluginType", "transportTypes"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9-_]+$",
+      "description": "Unique plugin identifier (alphanumeric, hyphens, underscores only)"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable plugin name"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Plugin version in semantic versioning format (x.y.z)"
+    },
+    "pluginType": {
+      "type": "string",
+      "enum": ["transport"],
+      "description": "Must be 'transport' for transport plugins"
+    },
+    "instantiable": {
+      "type": "boolean",
+      "default": false,
+      "description": "Transport plugins are typically not instantiable"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of the transport plugin and supported protocols"
+    },
+    "grpcEndpoint": {
+      "type": "string",
+      "description": "gRPC service endpoint (host:port format)"
+    },
+    "httpEndpoint": {
+      "type": "string",
+      "format": "uri",
+      "description": "Optional HTTP endpoint for REST API"
+    },
+    "transportTypes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/TransportType"
+      },
+      "description": "Array of transport types this plugin provides"
+    },
+    "config": {
+      "type": "object",
+      "description": "Plugin-specific configuration"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional plugin metadata"
+    }
+  },
+  "definitions": {
+    "TransportType": {
+      "type": "object",
+      "required": ["id", "name", "displayName", "fields"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9-_]+$",
+          "description": "Unique transport type identifier (kafka, amqp, redis, etc.)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Internal transport name"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Human-readable transport name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the transport type"
+        },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/TransportField"
+          },
+          "description": "Configuration fields for this transport"
+        }
+      }
+    },
+    "TransportField": {
+      "type": "object",
+      "required": ["id", "name", "type"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9-_]+$",
+          "description": "Field identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Field display name"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["text", "textarea", "number", "boolean", "select", "password"],
+          "description": "Field input type"
+        },
+        "required": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this field is required"
+        },
+        "placeholder": {
+          "type": "string",
+          "description": "Placeholder text for the field"
+        },
+        "description": {
+          "type": "string",
+          "description": "Field description"
+        },
+        "defaultValue": {
+          "description": "Default value for the field"
+        },
+        "options": {
+          "type": "array",
+          "description": "Options for select fields",
+          "items": {
+            "type": "object",
+            "required": ["value", "label"],
+            "properties": {
+              "value": {
+                "type": "string",
+                "description": "Option value"
+              },
+              "label": {
+                "type": "string",
+                "description": "Option display label"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
